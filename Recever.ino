@@ -10,9 +10,6 @@ Servo motorleft;
 Servo motorright;
 
 
-#define motor_left 2
-#define motor_right 3
-
 
 int mode = 0;
 
@@ -27,9 +24,10 @@ int speed_data4;
 int receiver_reset = 8;
 
 
+
 #define in1 7 //Motor1  L298 Pin in1 
-#define in2 6 //Motor1  L298 Pin in1 
-#define in3 5 //Motor2  L298 Pin in1 
+#define in2 3 //Motor1  L298 Pin in1 
+#define in3 2 //Motor2  L298 Pin in1 
 #define in4 4 //Motor2  L298 Pin in1 
 
 
@@ -38,6 +36,7 @@ const uint64_t pipe = 0xE8E8F0F0E1LL;
 
 RF24 radio(CE_PIN, CSN_PIN);
 byte data[6]; // depending on the number of sensors used
+
 
 unsigned long lastReceiveTime = 0;
 unsigned long currentTime = 0;
@@ -50,12 +49,11 @@ void setup()
   delay(200);
   pinMode(receiver_reset, OUTPUT);
   Serial.begin(9600);
-  pinMode(motor_left, OUTPUT);
-  pinMode(motor_right, OUTPUT);
 
 
-  motorleft.attach(motor_left);
-  motorright.attach(motor_right);
+
+  motorleft.attach(5,1000,2000);
+  motorright.attach(6,1000,2000);
 
 
   Serial.println("Nrf24L01 Receiver Starting");
@@ -66,6 +64,8 @@ void setup()
   resetData();
 
   //default values
+  data[0] = 127;
+  data[1] = 127;
 
 
   motorleft.write(0);
@@ -80,13 +80,16 @@ void setup()
 
 void loop()
 {
+ 
+
   if ( radio.available() )
   {
-Serial.println(data[1]);
-Serial.println("Data");
-Serial.println(data[0]); // up down
-Serial.println(data[1]); // left right
-Serial.println(data[2]); // button
+    radio.read( data, sizeof(data));
+
+    Serial.println("Data");
+    Serial.println(data[0]); // up down
+    Serial.println(data[1]); // left right
+    Serial.println(data[2]); // button
 
     if (data[2] == 1)
     {
@@ -121,6 +124,7 @@ Serial.println(data[2]); // button
 
   if (mode == 0)
   {
+  
 
     if (data[0] < 20)
     {
@@ -181,6 +185,7 @@ void resetData()
 {
   // we are going to place our default code over here.
   Serial.println("Connection Lost");
+  Stop();
   motorleft.writeMicroseconds(1000);
   motorright.writeMicroseconds(1000);
 
@@ -189,7 +194,7 @@ void resetData()
 
 
 void forword() { //forword
-
+  Serial.println("forword");
   digitalWrite(in1, HIGH); //Right Motor forword Pin
   digitalWrite(in2, LOW);  //Right Motor backword Pin
   digitalWrite(in3, LOW);  //Left Motor backword Pin
@@ -199,7 +204,7 @@ void forword() { //forword
 }
 
 void backword() { //backword
-
+  Serial.println("backword");
   digitalWrite(in1, LOW);  //Right Motor forword Pin
   digitalWrite(in2, HIGH); //Right Motor backword Pin
   digitalWrite(in3, HIGH); //Left Motor backword Pin
@@ -209,7 +214,7 @@ void backword() { //backword
 }
 
 void turnRight() { //turnRight
-
+  Serial.println("turnRight");
   digitalWrite(in1, LOW);  //Right Motor forword Pin
   digitalWrite(in2, HIGH); //Right Motor backword Pin
   digitalWrite(in3, LOW);  //Left Motor backword Pin
@@ -217,16 +222,16 @@ void turnRight() { //turnRight
 
 
 }
-void turnLeft() { //turnRight
-
-  digitalWrite(in1, LOW);  //Right Motor forword Pin
-  digitalWrite(in2, HIGH); //Right Motor backword Pin
-  digitalWrite(in3, LOW);  //Left Motor backword Pin
-  digitalWrite(in4, HIGH); //Left Motor forword Pin
+void turnLeft() { //turnLeft
+  Serial.println("turnLeft");
+  digitalWrite(in1, HIGH);  //Right Motor forword Pin
+  digitalWrite(in2, LOW); //Right Motor backword Pin
+  digitalWrite(in3, HIGH);  //Left Motor backword Pin
+  digitalWrite(in4, LOW); //Left Motor forword Pin
 
 }
 void Stop() { //stop
-
+  Serial.println("stop");
   digitalWrite(in1, LOW); //Right Motor forword Pin
   digitalWrite(in2, LOW); //Right Motor backword Pin
   digitalWrite(in3, LOW); //Left Motor backword Pin
@@ -237,7 +242,8 @@ void Stop() { //stop
 
 void boatforword()
 {
-  speed_data = map(data[0], 0, 125, 1000, 2000);
+  Serial.println("boatforword");
+  speed_data = map(data[0], 0, 125, 0, 180);
   motorleft.writeMicroseconds(speed_data);
   motorright.writeMicroseconds(speed_data);
   delay(50);
@@ -246,28 +252,30 @@ void boatforword()
 
 void boatleft()
 {
-  speed_data1 = map(data[1], 0, 125, 1000, 1500);
+  Serial.println("boatleft");
+  speed_data1 = map(data[1], 0, 125, 0, 180);
   motorleft.writeMicroseconds(speed_data1);
-  speed_data2 = map(data[1], 0, 125, 1500, 1000);
+  speed_data2 = map(data[1], 0, 125, 180, 0);
   motorright.writeMicroseconds(speed_data2);
   delay(50);
 
 }
 void boatright()
 {
-  speed_data3 = map(data[1], 130, 255, 1500, 1000);
+
+  Serial.println("boatright");
+  speed_data3 = map(data[1], 130, 255, 180, 0);
   motorleft.writeMicroseconds(speed_data3);
-  speed_data4 = map(data[1], 130, 255, 1000, 1500);
+  speed_data4 = map(data[1], 130, 255, 0, 180);
   motorright.writeMicroseconds(speed_data4);
   delay(50);
 
 }
 void boatstop()
 {
-
+  Serial.println("boatstop");
   motorleft.writeMicroseconds(1000);
   motorright.writeMicroseconds(1000);
   delay(50);
 
 }
-
